@@ -1,4 +1,4 @@
-![CI Status](https://github.com/google/resvg-wheels/actions/workflows/ci.yml/badge.svg)
+![CI Status](https://github.com/google/resvg-wheels/actions/workflows/CI/badge.svg)
 
 # resvg wheels
 

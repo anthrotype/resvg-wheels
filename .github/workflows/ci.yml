@@ -2,10 +2,35 @@ name: CI
 
 on:
   push:
+    branches: [main]
+    tags: ["v*.*.*"]
   pull_request:
+    branches: [main]
 
 jobs:
-  macos:
+  build_sdist:
+    name: Build Source Distribution
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: recursive
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.x"
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+    - name: Build sdist
+      run: python build.py sdist
+    - name: Check metadata
+      run: twine check dist/*.tar.gz
+    - uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist
+
+  build_macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -21,38 +46,24 @@ jobs:
           target: aarch64-apple-darwin
           profile: minimal
           default: true
-      - name: Build wheels - x86_64
-        uses: messense/maturin-action@v1
-        with:
-          target: x86_64-apple-darwin
-          args: -m resvg/Cargo.toml --release --out dist --no-sdist
-      - name: Install built wheel - x86_64
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Build wheel - x86_64
+        run: python build.py wheel
+      - name: Install wheel
         run: |
-          pip install resvg --no-index --find-links dist --force-reinstall
-          resvg --help
+          pip install --no-index --find-links dist/ --force-reinstall resvg-cli
+          which resvg
+          resvg --version
       - name: Build wheels - universal2
-        uses: messense/maturin-action@v1
-        with:
-          args: -m resvg/Cargo.toml --release --universal2 --out dist --no-sdist
-      - name: Install built wheel - universal2
-        run: |
-          pip install resvg --no-index --find-links dist --force-reinstall
-          resvg --help
-      - name: Upload wheels
+        run: python build.py wheel --universal2
+      - name: Upload wheel
         uses: actions/upload-artifact@v2
         with:
-          name: wheels
+          name: dist
           path: dist
-      - name: Upload binary to GitHub Release
-        uses: svenstaro/upload-release-action@v2
-        if: "startsWith(github.ref, 'refs/tags/')"
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file_glob: true
-          file: dist/resvg-*.whl
-          tag: ${{ github.ref }}
 
-  windows:
+  build_windows:
     runs-on: windows-latest
     strategy:
       matrix:
@@ -75,92 +86,118 @@ jobs:
           target: ${{ matrix.platform.target }}
           profile: minimal
           default: true
-      - name: Build wheels
-        uses: messense/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: -m resvg/Cargo.toml --release --out dist --no-sdist
-      - name: Install built wheel
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Build wheel
+        run: python build.py wheel --target ${{matrix.platform.target}}
+      - name: Install wheel
+        shell: bash
         run: |
-          pip install resvg --no-index --find-links dist --force-reinstall
-          resvg --help
-      - name: Upload wheels
+          pip install --no-index --find-links dist/ --force-reinstall resvg-cli
+          which resvg
+          resvg --version
+      - name: Upload wheel
         uses: actions/upload-artifact@v2
         with:
-          name: wheels
+          name: dist
           path: dist
-      - name: Upload binary to GitHub Release
-        uses: svenstaro/upload-release-action@v2
-        if: "startsWith(github.ref, 'refs/tags/')"
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file_glob: true
-          file: dist/resvg-*.whl
-          tag: ${{ github.ref }}
 
-  linux:
+  build_linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [
-          { target: "x86_64-unknown-linux-musl", image_tag: "x86_64-musl" },
-          # { target: "i686-unknown-linux-musl", image_tag: "i686-musl" },
-          { target: "aarch64-unknown-linux-musl", image_tag: "aarch64-musl" },
-          # { target: "armv7-unknown-linux-musleabihf", image_tag: "armv7-musleabihf" },
-          # { target: "powerpc64le-unknown-linux-musl", image_tag: "powerpc64le-musl" },
-        ]
     container:
-      image: docker://messense/rust-musl-cross:${{ matrix.platform.image_tag }}
+      image: docker://quay.io/pypa/manylinux2014_x86_64:latest
       env:
-        CFLAGS_armv7_unknown_linux_musleabihf: '-mfpu=vfpv3-d16'
+        PYTHON_DIR: /opt/python/cp37-cp37m/bin/
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Build Wheels - manylinux
-        uses: messense/maturin-action@main
-        with:
-          target: ${{ matrix.platform.target }}
-          manylinux: auto
-          container: off
-          args: -m resvg/Cargo.toml --no-sdist --release -o dist
-      # - name: Build Wheels - musllinux
-      #   uses: messense/maturin-action@main
-      #   with:
-      #     target: ${{ matrix.platform.target }}
-      #     manylinux: musllinux_1_1
-      #     container: off
-      #     args: -m resvg/Cargo.toml --no-sdist --release -o dist
-      - name: Upload wheels
-        uses: actions/upload-artifact@v2
-        with:
-          name: wheels
-          path: dist
-      - name: Upload binary to GitHub Release
-        uses: svenstaro/upload-release-action@v2
-        if: "startsWith(github.ref, 'refs/tags/')"
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file_glob: true
-          file: dist/resvg-*.whl
-          tag: ${{ github.ref }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        default: true
+    - name: Install dependencies
+      # I haven't figured out how to make $PATH persist throughout the job.
+      # THe `echo "PATH=..." >> GITHUB_ENV` trick doesn't seem to work inside the
+      # docker container. Hence I do export PATH=... each time.
+      run: |
+        export PATH=$PYTHON_DIR:$PATH
+        python --version
+        pip --version
+        pip install -U pip
+        pip install -r requirements.txt
+    - name: Build wheel
+      run: |
+        export PATH=$PYTHON_DIR:$PATH
+        python build.py wheel
+    - name: Install wheel
+      run: |
+        export PATH=$PYTHON_DIR:$PATH
+        pip install --no-index --find-links dist/ --force-reinstall resvg-cli
+        which resvg
+        resvg --version
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist
 
-  # release:
-  #   name: Release
-  #   runs-on: ubuntu-latest
-  #   if: "startsWith(github.ref, 'refs/tags/')"
-  #   needs: [ macos, windows, linux ]
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         name: wheels
-  #     - uses: actions/setup-python@v2
-  #       with:
-  #         python-version: 3.9
-  #     - name: Publish to PyPi
-  #       env:
-  #         TWINE_USERNAME: __token__
-  #         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-  #       run: |
-  #         pip install --upgrade twine
-  #         twine upload --skip-existing *
+  release:
+    name: Release on tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build_sdist, build_macos, build_windows, build_linux ]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: dist
+        path: dist
+
+    - name: Extract release notes from annotated tag message
+      id: release_notes
+      env:
+        # e.g. v0.1.0a1, v1.2.0b2 or v2.3.0rc3, but not v1.0.0
+        PRERELEASE_TAG_PATTERN: "v[[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+([ab]|rc)[[:digit:]]+"
+      run: |
+        # GH checkout action doesn't preserve tag annotations, we must fetch them
+        # https://github.com/actions/checkout/issues/290
+        git fetch --tags --force
+        # strip leading 'refs/tags/' to get the tag name
+        TAG_NAME="${GITHUB_REF##*/}"
+        echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
+
+        # Dump tag message to temporary .md file (excluding the PGP signature at the bottom)
+        TAG_MESSAGE=$(git tag -l --format='%(contents)' $TAG_NAME | sed -n '/-----BEGIN PGP SIGNATURE-----/q;p')
+        echo "$TAG_MESSAGE" > "${{ runner.temp }}/release_notes.md"
+        # if the tag has a pre-release suffix mark the Github Release accordingly
+        if egrep -q "$PRERELEASE_TAG_PATTERN" <<< "$TAG_NAME"; then
+          echo "Tag contains a pre-release suffix"
+          echo "IS_PRERELEASE=true" >> "$GITHUB_ENV"
+        else
+          echo "Tag does not contain pre-release suffix"
+          echo "IS_PRERELEASE=false" >> "$GITHUB_ENV"
+        fi
+
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        name: ${{ env.TAG_NAME }}
+        tag_name: ${{ github.ref }}
+        body_path: "${{ runner.temp }}/release_notes.md"
+        draft: false
+        prerelease: ${{ env.IS_PRERELEASE }}
+        files: dist/*
+
+    # - uses: pypa/gh-action-pypi-publish@v1.4.2
+    #   with:
+    #     user: __token__
+    #     password: ${{ secrets.PYPI_PASSWORD }}
+    #     skip_existing: true

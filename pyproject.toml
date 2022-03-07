@@ -9,6 +9,7 @@ build-backend = "maturin"
 # Cargo.toml, everything works.
 # manifest-path = "resvg/Cargo.toml"
 bindings = "bin"
+sdist-include = ["README.python.rst"]
 
 [project]
 name = "resvg-cli"
@@ -17,7 +18,7 @@ name = "resvg-cli"
 description = "Precompiled binaries for the 'resvg' CLI tool, from the homonymous SVG rendering library."
 maintainers = [{name = "Cosimo Lupo", email = "cosimo@anthrotype.com"}]
 license = {file = "LICENSE.txt"}
-readme = {file = "../README.rst"}
+readme = {file = "README.python.rst"}
 
 [project.urls]
 repository = "https://github.com/anthrotype/resvg-wheels"

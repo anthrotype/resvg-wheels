@@ -18,6 +18,7 @@ name = "resvg-cli"
 version = "0.22.0.post2"
 description = "Precompiled binaries for the 'resvg' CLI tool, from the homonymous SVG rendering library."
 maintainers = [{name = "Cosimo Lupo", email = "cosimo@anthrotype.com"}]
+license = {file = "LICENSE.txt"}
 readme = {file = "README.python.rst"}
 
 [project.urls]

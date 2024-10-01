@@ -3,22 +3,18 @@ requires = ["maturin>=1.7.4,<1.8"]
 build-backend = "maturin"
 
 [tool.maturin]
-# If I use the 'manifest-path' option, then maturin takes all the metadata from the
-# Cargo.toml and ignores the metadata from pyproject.toml; it also fails to build
-# a sdist for some reason. Only when pyproject.toml is in the same directory as
-# Cargo.toml, everything works.
-# manifest-path = "resvg/Cargo.toml"
+manifest-path = "resvg/crates/resvg/Cargo.toml"
 bindings = "bin"
-sdist-include = ["README.python.rst"]
+include = ["README.rst"]
 
 [project]
 name = "resvg-cli"
 # comment out 'version' to use the same as Cargo.toml, only override if needed
 # (e.g. for a post-release to fix some packaging issues with a previous release)
-version = "0.44.0b1"
+version = "0.44.0b2"
 description = "Precompiled binaries for the 'resvg' CLI tool, from the homonymous SVG rendering library."
 maintainers = [{name = "Cosimo Lupo", email = "cosimo@anthrotype.com"}]
-readme = {file = "README.python.rst"}
+readme = {file = "README.rst"}
 
 [project.urls]
 repository = "https://github.com/anthrotype/resvg-wheels"

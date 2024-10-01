@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 root_dir = Path(__file__).parent.resolve()
-crate_dir = root_dir / "resvg"
+crate_dir = root_dir / "resvg" / "crates" / "resvg"
 dist_dir = root_dir / "dist"
 cargo_manifest_path = crate_dir / "Cargo.toml"
 pyproject_toml_path = root_dir / "pyproject.toml"
@@ -53,13 +53,18 @@ def main():
     try:
         cmd = {
             "sdist": ["maturin", "sdist"],
-            "wheel": ["maturin", "build", "--no-sdist", "--release"],
+            "wheel": ["maturin", "build", "--release"],
         }[sys.argv[1]]
     except (IndexError, KeyError):
         sys.exit("usage: build.py [sdist|wheel]")
 
+    args = sys.argv[2:]
+    if "--universal2" in args:
+        cmd.extend(["--target", "universal2-apple-darwin"])
+        args.remove("--universal2")
+
     return subprocess.call(
-        cmd + ["-o", str(dist_dir)] + sys.argv[2:], cwd=str(crate_dir)
+        cmd + ["-o", str(dist_dir)] + args, cwd=str(crate_dir)
     )
 
 

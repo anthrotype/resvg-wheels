@@ -25,10 +25,10 @@ jobs:
       run: python build.py sdist
     - name: Check metadata
       run: twine check dist/*.tar.gz
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
-        name: dist
-        path: dist
+        name: pure
+        path: dist/*.tar.gz
 
   build_macos:
     runs-on: macos-latest
@@ -38,12 +38,12 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: aarch64-apple-darwin
+          target: x86_64-apple-darwin
           profile: minimal
           default: true
       - name: Install dependencies
@@ -58,10 +58,10 @@ jobs:
       - name: Build wheels - universal2
         run: python build.py wheel --universal2
       - name: Upload wheel
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist
+          name: macos
+          path: dist/*.whl
 
   build_windows:
     runs-on: windows-latest
@@ -77,7 +77,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
           architecture: ${{ matrix.platform.python-architecture }}
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -97,17 +97,17 @@ jobs:
           which resvg
           resvg --version
       - name: Upload wheel
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist
+          name: windows-${{matrix.platform.python-architecture}}
+          path: dist/*.whl
 
   build_linux:
     runs-on: ubuntu-latest
     container:
-      image: docker://quay.io/pypa/manylinux2014_x86_64:latest
+      image: docker://quay.io/pypa/manylinux_2_28_x86_64:latest
       env:
-        PYTHON_DIR: /opt/python/cp37-cp37m/bin/
+        PYTHON_DIR: /opt/python/cp38-cp38/bin/
     steps:
     - uses: actions/checkout@v2
       with:
@@ -139,47 +139,15 @@ jobs:
         which resvg
         resvg --version
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: dist
-        path: dist
-
-  postfix:
-    name: Fix up wheels
-    needs: [build_sdist, build_macos, build_windows, build_linux ]
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: "3.x"
-
-    - uses: actions/download-artifact@v2
-      with:
-        name: dist
-        path: dist
-
-    # https://github.com/PyO3/maturin/issues/829
-    - name: Add license text file to wheels
-      run: |
-        pip install -r requirements.txt
-        python add_license_file_to_wheels.py dist/*.whl
-
-    - name: Upload wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist
+        name: linux
+        path: dist/*.whl
 
   release:
     name: Release on tags
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [postfix]
+    needs: [build_sdist, build_macos, build_windows, build_linux ]
     runs-on: ubuntu-latest
 
     steps:
@@ -187,9 +155,9 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
-        name: dist
+        merge-multiple: true
         path: dist
 
     - name: Extract release notes from annotated tag message

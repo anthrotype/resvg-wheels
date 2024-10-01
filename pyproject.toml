@@ -9,7 +9,7 @@ build-backend = "maturin"
 # Cargo.toml, everything works.
 # manifest-path = "resvg/Cargo.toml"
 bindings = "bin"
-sdist-include = ["README.python.rst"]
+sdist-include = ["README.python.rst", ".cargo/config.toml"]
 
 [project]
 name = "resvg-cli"

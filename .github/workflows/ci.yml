@@ -38,7 +38,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -77,7 +77,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
           architecture: ${{ matrix.platform.python-architecture }}
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -107,7 +107,7 @@ jobs:
     container:
       image: docker://quay.io/pypa/manylinux2014_x86_64:latest
       env:
-        PYTHON_DIR: /opt/python/cp37-cp37m/bin/
+        PYTHON_DIR: /opt/python/cp38-cp38m/bin/
     steps:
     - uses: actions/checkout@v2
       with:

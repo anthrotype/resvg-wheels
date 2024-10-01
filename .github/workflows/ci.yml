@@ -107,7 +107,7 @@ jobs:
     container:
       image: docker://quay.io/pypa/manylinux_2_28_x86_64:latest
       env:
-        PYTHON_DIR: /opt/python/cp38-cp38m/bin/
+        PYTHON_DIR: /opt/python/cp38-cp38/bin/
     steps:
     - uses: actions/checkout@v2
       with:

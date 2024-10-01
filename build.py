@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 root_dir = Path(__file__).parent.resolve()
-crate_dir = root_dir / "resvg"
+crate_dir = root_dir / "resvg" / "crates" / "resvg"
 dist_dir = root_dir / "dist"
 cargo_manifest_path = crate_dir / "Cargo.toml"
 pyproject_toml_path = root_dir / "pyproject.toml"

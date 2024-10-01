@@ -1,0 +1,4 @@
+# Use local git binary instead of libgit2 to workaround building for aarch64 targets:
+# https://github.com/rust-lang/cargo/issues/10583
+[net]
+git-fetch-with-cli = true

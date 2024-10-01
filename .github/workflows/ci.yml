@@ -99,7 +99,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
-          name: windows
+          name: windows-${{matrix.platform.python-architecture}}
           path: dist/*.whl
 
   build_linux:

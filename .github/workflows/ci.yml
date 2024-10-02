@@ -49,14 +49,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Build wheel - x86_64
-        run: python build.py wheel
+        run: python build.py wheel --target x86_64-apple-darwin
+      - name: Build wheels - universal2
+        run: python build.py wheel --universal2
       - name: Install wheel
         run: |
           pip install --no-index --find-links dist/ --force-reinstall resvg-cli
           which resvg
           resvg --version
-      - name: Build wheels - universal2
-        run: python build.py wheel --universal2
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:

@@ -11,7 +11,7 @@ include = ["README.rst"]
 name = "resvg-cli"
 # comment out 'version' to use the same as Cargo.toml, only override if needed
 # (e.g. for a post-release to fix some packaging issues with a previous release)
-version = "0.44.0b2"
+# version = "0.44.0"
 description = "Precompiled binaries for the 'resvg' CLI tool, from the homonymous SVG rendering library."
 maintainers = [{name = "Cosimo Lupo", email = "cosimo@anthrotype.com"}]
 readme = {file = "README.rst"}
